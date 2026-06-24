@@ -12,7 +12,7 @@
   --purple:#d8c2ff; --purple-d:#b18cff; --peach:#ffd6b8; --peach-d:#ffae7a;
   --cream:#fff7fb; --card:#ffffff; --ink:#6b5577; --ink-soft:#9a86a8;
   --shadow:0 8px 0 rgba(150,110,150,.18); --shadow-sm:0 4px 0 rgba(150,110,150,.16);
-  --r-common:#7fd6a0; --r-rare:#74b6ff; --r-epic:#c89bff; --r-legendary:#ffc24a;
+  --r-common:#7fd6a0; --r-rare:#74b6ff; --r-epic:#c89bff; --r-legendary:#ffc24a; --r-mythic:#ff5fd0;
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none;}
@@ -86,6 +86,8 @@ body{
 .row .ds{font-size:11px;color:var(--ink-soft);font-weight:700;line-height:1.2;margin-top:2px;}
 .tag{font-size:9px;padding:1px 7px;border-radius:20px;color:#fff;text-transform:uppercase;letter-spacing:.4px;}
 .t-common{background:var(--r-common)} .t-rare{background:var(--r-rare)} .t-epic{background:var(--r-epic)} .t-legendary{background:var(--r-legendary)}
+.t-mythic{background:linear-gradient(90deg,#ff6fd8,#a18cff,#6fd8ff,#ff6fd8);background-size:300% 100%;animation:rainbowshift 3s linear infinite;}
+@keyframes rainbowshift{to{background-position:300% 0}}
 .lvlpill{font-size:10px;background:var(--purple);color:#fff;border-radius:20px;padding:1px 8px;}
 
 .btn{border:none;border-radius:14px;padding:9px 12px;font-family:inherit;font-weight:900;font-size:13px;color:#fff;
@@ -177,6 +179,25 @@ body{
 .ach .at{font-size:13px}.ach .ad{font-size:11px;color:var(--ink-soft);font-weight:700}
 .empty{text-align:center;color:var(--ink-soft);font-size:13px;padding:20px;}
 .spark{position:fixed;pointer-events:none;z-index:95;}
+/* blind boxes / empire / combo */
+.box-card{display:flex;align-items:center;gap:10px;padding:10px;border-radius:18px;margin-bottom:10px;border:2px solid #fff;box-shadow:var(--shadow-sm);background:var(--card);}
+.box-ic{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;flex:0 0 auto;box-shadow:inset 0 -3px 0 rgba(0,0,0,.06);}
+.box-odds{font-size:9px;color:var(--ink-soft);margin-top:3px;display:flex;gap:5px;flex-wrap:wrap;}
+.box-odds b{font-weight:900;}
+.shakebox{font-size:74px;text-align:center;animation:boxwiggle .35s ease-in-out infinite;filter:drop-shadow(0 8px 0 rgba(150,110,150,.18));}
+@keyframes boxwiggle{0%,100%{transform:rotate(-9deg) scale(1)}50%{transform:rotate(9deg) scale(1.08)}}
+.pull-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:8px;margin:10px 0;}
+.pull-cell{background:#fff;border-radius:16px;padding:8px 4px 6px;text-align:center;box-shadow:var(--shadow-sm);border:3px solid #eee;position:relative;opacity:0;animation:pullin .45s cubic-bezier(.2,1.6,.4,1) forwards;}
+.pull-cell.rar-rare{border-color:var(--r-rare)} .pull-cell.rar-epic{border-color:var(--r-epic)} .pull-cell.rar-legendary{border-color:var(--r-legendary)} .pull-cell.rar-mythic{border-color:var(--r-mythic);animation:pullin .45s cubic-bezier(.2,1.6,.4,1) forwards, glowpulse 1.2s ease infinite .45s;}
+@keyframes pullin{0%{opacity:0;transform:scale(.3) rotate(-20deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes glowpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,95,208,.5),var(--shadow-sm)}50%{box-shadow:0 0 0 5px rgba(255,95,208,.25),var(--shadow-sm)}}
+.pull-cell .pn{font-size:9px;line-height:1.05;margin-top:2px;height:22px;overflow:hidden;}
+.pull-cell .newb{position:absolute;top:-7px;right:-5px;background:var(--pink-d);color:#fff;font-size:8px;padding:1px 6px;border-radius:20px;border:2px solid #fff;transform:rotate(8deg);}
+.pull-cell .dupb{font-size:9px;color:var(--mint-d);font-weight:900;}
+.combo-pop{position:absolute;font-size:22px;font-weight:900;pointer-events:none;z-index:21;color:#ff8a3a;text-shadow:0 2px 0 #fff,0 0 10px rgba(255,138,58,.6);animation:comboanim .7s ease-out forwards;}
+@keyframes comboanim{0%{transform:translate(-50%,0) scale(.5) rotate(-8deg);opacity:0}25%{transform:translate(-50%,-8px) scale(1.3) rotate(5deg);opacity:1}100%{transform:translate(-50%,-44px) scale(1) rotate(0);opacity:0}}
+.subtle{font-size:11px;color:var(--ink-soft);font-weight:700;text-align:center;margin:8px 0 4px;}
+.bigreward{background:linear-gradient(180deg,#fff,#fff3df);border:3px solid var(--yellow-d);}
 </style>
 </head>
 <body>
@@ -245,29 +266,49 @@ function rgb(a){return 'rgb('+a[0]+','+a[1]+','+a[2]+')';}
 function shade(h,p){let c=hexToRgb(h);return rgb(c.map(v=>clamp(Math.round(v+(p>0?(255-v)*p:v*p)),0,255)));}
 
 /* ===================== GAME DATA ===================== */
-const RARITY={common:{c:'#7fd6a0',m:1},rare:{c:'#74b6ff',m:1},epic:{c:'#c89bff',m:1},legendary:{c:'#ffc24a',m:1}};
+const RARITY={common:{c:'#7fd6a0',m:1},rare:{c:'#74b6ff',m:1},epic:{c:'#c89bff',m:1},legendary:{c:'#ffc24a',m:1},mythic:{c:'#ff5fd0',m:1}};
+const RARITY_RANK={common:0,rare:1,epic:2,legendary:3,mythic:4};
 
 const SQUISHIES=[
+ // ---- COMMON ----
  {id:'bread',name:'Bread Squishy',r:'common',tags:['food'],cute:5,trendv:1,pop:12,price:5,rp:0,cost:0,d:{base:'#e7c39c',acc:'#c98a4b',shape:'round',face:'happy',ex:['crust']}},
+ {id:'cookie',name:'Cookie Squishy',r:'common',tags:['food'],cute:7,trendv:2,pop:16,price:12,rp:25,cost:120,d:{base:'#d9a868',acc:'#6b4423',shape:'round',face:'happy',ex:['seeds']}},
  {id:'donut',name:'Donut Squishy',r:'common',tags:['food'],cute:8,trendv:2,pop:20,price:18,rp:40,cost:220,d:{base:'#f6b6cf',acc:'#8a5a3a',shape:'ring',face:'happy',ex:['sprinkles']}},
+ {id:'marshmallow',name:'Marshmallow Squishy',r:'common',tags:['food'],cute:11,trendv:2,pop:24,price:30,rp:80,cost:520,d:{base:'#fff5f7',acc:'#ffd9e6',shape:'cube',face:'sleepy',ex:[]}},
  {id:'strawberry',name:'Strawberry Squishy',r:'common',tags:['food'],cute:12,trendv:3,pop:30,price:45,rp:120,cost:900,d:{base:'#ff6b86',acc:'#ffe6ec',shape:'teardrop',face:'cute',ex:['seeds','leaf']}},
  {id:'banana',name:'Banana Squishy',r:'common',tags:['food'],cute:10,trendv:2,pop:26,price:70,rp:260,cost:2600,d:{base:'#ffe06b',acc:'#c9a24b',shape:'long',face:'happy',ex:[]}},
  {id:'toast',name:'Toast Squishy',r:'common',tags:['food'],cute:9,trendv:3,pop:34,price:120,rp:520,cost:7000,d:{base:'#efc188',acc:'#c98a4b',shape:'cube',face:'happy',ex:['crust']}},
+ // ---- RARE ----
  {id:'blobfish',name:'Blobfish Squishy',r:'rare',tags:['ocean'],cute:18,trendv:6,pop:60,price:380,rp:1200,cost:22000,d:{base:'#f3b0c4',acc:'#d98aa0',shape:'lump',face:'sad',ex:[]}},
+ {id:'pudding',name:'Pudding Squishy',r:'rare',tags:['food'],cute:19,trendv:5,pop:58,price:520,rp:1700,cost:38000,d:{base:'#ffe3a8',acc:'#c98a4b',shape:'tall',face:'cute',ex:['crust']}},
  {id:'butter',name:'Butter Squishy',r:'rare',tags:['food'],cute:20,trendv:5,pop:55,price:700,rp:2200,cost:60000,d:{base:'#ffe89a',acc:'#e8c860',shape:'cube',face:'cute',ex:[]}},
+ {id:'cactus',name:'Cactus Squishy',r:'rare',tags:[],cute:21,trendv:6,pop:64,price:950,rp:2900,cost:95000,d:{base:'#7fc66a',acc:'#ffd1e8',shape:'tall',face:'happy',ex:['horns']}},
  {id:'seal',name:'Seal Squishy',r:'rare',tags:['ocean'],cute:24,trendv:6,pop:70,price:1300,rp:3600,cost:150000,d:{base:'#cdd6e0',acc:'#ffffff',shape:'long',face:'cute',ex:['whiskers']}},
  {id:'axolotl',name:'Axolotl Squishy',r:'rare',tags:['ocean'],cute:30,trendv:8,pop:85,price:2400,rp:6000,cost:380000,d:{base:'#ffbfe0',acc:'#ff8ac4',shape:'long',face:'uwu',ex:['gills']}},
  {id:'frog',name:'Frog Squishy',r:'rare',tags:[],cute:22,trendv:7,pop:78,price:3600,rp:9000,cost:800000,d:{base:'#9be08a',acc:'#6abf5a',shape:'round',face:'wide',ex:[]}},
+ // ---- EPIC ----
  {id:'galaxy_cat',name:'Galaxy Cat',r:'epic',tags:['galaxy'],cute:45,trendv:12,pop:150,price:16000,rp:18000,cost:2.2e6,d:{base:'#6a4aa0',acc:'#c9b0ff',shape:'round',face:'cool',ex:['ears','stars']}},
  {id:'rainbow_whale',name:'Rainbow Whale',r:'epic',tags:['ocean','galaxy'],cute:50,trendv:14,pop:170,price:30000,rp:30000,cost:5.5e6,d:{base:'#a8d8ff',acc:'#ffffff',shape:'long',face:'cute',ex:['stripes','spout']}},
+ {id:'crystal_deer',name:'Crystal Deer',r:'epic',tags:['galaxy'],cute:52,trendv:13,pop:178,price:42000,rp:40000,cost:9e6,d:{base:'#b8e0ff',acc:'#ffffff',shape:'round',face:'cute',ex:['horns','stars']}},
  {id:'mochi_dragon',name:'Mochi Dragon',r:'epic',tags:['galaxy'],cute:55,trendv:13,pop:185,price:55000,rp:48000,cost:1.3e7,d:{base:'#f6c2e0',acc:'#ff9ed6',shape:'round',face:'cute',ex:['horns']}},
+ {id:'lava_slime',name:'Lava Slime',r:'epic',tags:[],cute:58,trendv:14,pop:192,price:70000,rp:60000,cost:2.1e7,d:{base:'#ff6a3a',acc:'#ffd23a',shape:'lump',face:'cool',ex:['stars']}},
  {id:'cloud_bunny',name:'Cloud Bunny',r:'epic',tags:[],cute:60,trendv:15,pop:200,price:90000,rp:72000,cost:3e7,d:{base:'#ffffff',acc:'#d8e8ff',shape:'round',face:'sleepy',ex:['longears','cloudpuff']}},
+ {id:'aurora_owl',name:'Aurora Owl',r:'epic',tags:['galaxy'],cute:63,trendv:15,pop:210,price:110000,rp:88000,cost:5e7,d:{base:'#8a7aff',acc:'#b8ffe0',shape:'round',face:'cute',ex:['ears','stars']}},
  {id:'moon_penguin',name:'Moon Penguin',r:'epic',tags:['galaxy'],cute:65,trendv:16,pop:220,price:130000,rp:1.0e5,cost:7e7,d:{base:'#b8c4e0',acc:'#ffffff',shape:'tall',face:'cute',ex:['moon']}},
+ // ---- LEGENDARY ----
  {id:'cosmic_blobfish',name:'Cosmic Blobfish',r:'legendary',tags:['ocean','galaxy'],cute:120,trendv:30,pop:420,price:700000,rp:1.6e5,cost:1.6e8,d:{base:'#b89cff',acc:'#ffd6ff',shape:'lump',face:'cool',ex:['glow','stars']}},
  {id:'golden_capybara',name:'Golden Capybara',r:'legendary',tags:[],cute:140,trendv:34,pop:480,price:1.4e6,rp:2.6e5,cost:4e8,d:{base:'#f0c860',acc:'#c89a30',shape:'blocky',face:'regal',ex:['glow','crown','sparkle']}},
+ {id:'diamond_dragon',name:'Diamond Dragon',r:'legendary',tags:['galaxy'],cute:152,trendv:36,pop:510,price:2.0e6,rp:3.2e5,cost:6e8,d:{base:'#bfeaff',acc:'#ffffff',shape:'round',face:'cool',ex:['glow','horns','sparkle']}},
  {id:'infinite_butter',name:'Infinite Butter Cube',r:'legendary',tags:['food'],cute:160,trendv:38,pop:540,price:2.6e6,rp:4e5,cost:9e8,d:{base:'#ffe07a',acc:'#fff6c0',shape:'cube',face:'cool',ex:['glow','sparkle']}},
+ {id:'rainbow_unicorn',name:'Rainbow Unicorn',r:'legendary',tags:['galaxy'],cute:172,trendv:41,pop:580,price:3.5e6,rp:5e5,cost:1.5e9,d:{base:'#ffffff',acc:'#ff9ed6',shape:'round',face:'cute',ex:['glow','horns','stars','sparkle']}},
  {id:'celestial_axolotl',name:'Celestial Axolotl',r:'legendary',tags:['ocean','galaxy'],cute:185,trendv:44,pop:620,price:4.5e6,rp:6e5,cost:2.2e9,d:{base:'#c8e0ff',acc:'#ffe07a',shape:'long',face:'uwu',ex:['glow','gills','halo','stars']}},
  {id:'king_seal',name:'King Seal',r:'legendary',tags:['ocean'],cute:220,trendv:52,pop:720,price:8e6,rp:9e5,cost:5e9,d:{base:'#e6def0',acc:'#ffd24a',shape:'long',face:'regal',ex:['glow','crown','whiskers']}},
+ // ---- MYTHIC ----
+ {id:'prism_phoenix',name:'Prism Phoenix',r:'mythic',tags:['mythic','galaxy'],cute:420,trendv:90,pop:1500,price:3e7,rp:1.4e6,cost:4e10,d:{base:'#ff8a3a',acc:'#ffffff',shape:'long',face:'cool',ex:['megaglow','spout','stars','sparkle']}},
+ {id:'void_capybara',name:'Void Capybara',r:'mythic',tags:['mythic'],cute:520,trendv:110,pop:1800,price:7e7,rp:2.4e6,cost:1.2e11,d:{base:'#4a3a6a',acc:'#b18cff',shape:'blocky',face:'regal',ex:['megaglow','stars','crown','sparkle']}},
+ {id:'eternal_mochi',name:'Eternal Mochi God',r:'mythic',tags:['mythic'],cute:640,trendv:135,pop:2200,price:1.5e8,rp:4e6,cost:3e11,d:{base:'#ffd6f0',acc:'#fff6c0',shape:'round',face:'cute',ex:['megaglow','horns','stars','sparkle']}},
+ {id:'star_empress',name:'Star Empress Axolotl',r:'mythic',tags:['mythic','ocean','galaxy'],cute:780,trendv:165,pop:2700,price:3e8,rp:6.5e6,cost:8e11,d:{base:'#c8b0ff',acc:'#ffd95a',shape:'long',face:'uwu',ex:['megaglow','gills','halo','stars','sparkle']}},
+ {id:'galactic_overlord',name:'Galactic Overlord Blob',r:'mythic',tags:['mythic','galaxy'],cute:1000,trendv:210,pop:3400,price:6e8,rp:1e7,cost:2e12,d:{base:'#2a2150',acc:'#ff66dd',shape:'lump',face:'cool',ex:['megaglow','stars','crown','sparkle']}},
 ];
 const SQ_BY_ID={}; SQUISHIES.forEach((s,i)=>{s.idx=i;SQ_BY_ID[s.id]=s;});
 
@@ -309,7 +350,29 @@ const EXPANSIONS=[
  {name:'Regional HQ',cost:2.5e7,mult:18},
  {name:'Global HQ',cost:5e8,mult:45},
  {name:'Mega Squishy Tower',cost:1e10,mult:120},
+ {name:'Squishy Space Station',cost:2e11,mult:340},
+ {name:'Orbital Squishy Ring',cost:5e12,mult:1000},
+ {name:'Squishy Moon Base',cost:1.5e14,mult:3200},
+ {name:'Galactic Squishy Empire',cost:5e15,mult:11000},
 ];
+const BUILDINGS=[
+ {id:'cafe',name:'Squishy Café',ic:'☕',desc:'+8% sell value per level',base:2500,cm:1.30,stat:'sell',per:0.08},
+ {id:'studio',name:'Marketing Studio',ic:'📣',desc:'+10% followers per level',base:15000,cm:1.32,stat:'follower',per:0.10},
+ {id:'lab',name:'R&D Lab',ic:'🧪',desc:'+1.4 research/s per level',base:60000,cm:1.33,stat:'research',per:1.4},
+ {id:'hub',name:'Logistics Hub',ic:'🚚',desc:'+9% production per level',base:250000,cm:1.34,stat:'prodm',per:0.09},
+ {id:'mall',name:'Squishy Mega Mall',ic:'🏬',desc:'+6% global income per level',base:2e6,cm:1.36,stat:'global',per:0.06},
+ {id:'park',name:'Squishy Theme Park',ic:'🎡',desc:'+10% global income per level',base:5e7,cm:1.40,stat:'global',per:0.10},
+ {id:'tower',name:'Squishy HQ Tower',ic:'🗼',desc:'+16% global income per level',base:1e9,cm:1.42,stat:'global',per:0.16},
+ {id:'rocket',name:'Squishy Launch Pad',ic:'🚀',desc:'+25% global income per level',base:5e11,cm:1.45,stat:'global',per:0.25},
+];
+const BUILD_BY_ID={}; BUILDINGS.forEach(b=>BUILD_BY_ID[b.id]=b);
+const BOXES=[
+ {id:'basic',name:'Basic Blind Box',ic:'📦',cost:600,bg:'#bfe6ff',odds:{common:68,rare:27,epic:5,legendary:0,mythic:0}},
+ {id:'deluxe',name:'Deluxe Blind Box',ic:'🎁',cost:35000,bg:'#ffc2e0',odds:{common:25,rare:46,epic:23,legendary:6,mythic:0}},
+ {id:'premium',name:'Premium Blind Box',ic:'💝',cost:4e6,bg:'#dcc6ff',odds:{common:0,rare:22,epic:48,legendary:27,mythic:3}},
+ {id:'mythic',name:'Mythic Blind Box',ic:'🌟',cost:8e8,bg:'#ffe79a',odds:{common:0,rare:0,epic:28,legendary:55,mythic:17}},
+];
+const BOX_BY_ID={}; BOXES.forEach(b=>BOX_BY_ID[b.id]=b);
 const TRENDS=[
  {id:'blobfish',name:'Blobfish Week',ids:['blobfish','cosmic_blobfish'],mult:6,follow:2.2,prod:1.3,c1:'#ff9ec9',c2:'#b18cff'},
  {id:'butter',name:'Butter Craze',ids:['butter','infinite_butter'],mult:6,follow:2.0,prod:1.3,c1:'#ffd95a',c2:'#ffae3a'},
@@ -317,6 +380,8 @@ const TRENDS=[
  {id:'capybara',name:'Capybara Mania',ids:['golden_capybara'],mult:9,follow:2.6,prod:1.4,c1:'#f0c860',c2:'#b8893a'},
  {id:'ocean',name:'Oceancore Festival',tag:'ocean',mult:4,follow:2.0,prod:1.5,c1:'#6cc6ff',c2:'#4fe0c8'},
  {id:'galaxy',name:'Galaxy Animal Trend',tag:'galaxy',mult:4,follow:2.2,prod:1.5,c1:'#b18cff',c2:'#6a8cff'},
+ {id:'food',name:'Sweet Tooth Sale',tag:'food',mult:4,follow:1.8,prod:1.45,c1:'#ffb37a',c2:'#ff7fb0'},
+ {id:'mythic',name:'Mythic Madness',tag:'mythic',mult:10,follow:3.2,prod:1.7,c1:'#ff6fd8',c2:'#6fd8ff'},
 ];
 const PERKS=[
  {id:'prodSpeed',name:'Production Speed',desc:'+5% production per level',base:1},
@@ -338,12 +403,22 @@ const ACHS=[
  {id:'mach1',name:'Machine Master',desc:'Level a machine to 25',ck:g=>Object.values(g.mach).some(m=>m>=25)},
  {id:'collect1',name:'Collector',desc:'Unlock 5 squishies',ck:g=>unlockedCount()>=5},
  {id:'collect2',name:'Curator',desc:'Unlock 10 squishies',ck:g=>unlockedCount()>=10},
- {id:'collect3',name:'Completionist',desc:'Unlock all 20 squishies',ck:g=>unlockedCount()>=20},
+ {id:'collect3',name:'Big Collection',desc:'Unlock 20 squishies',ck:g=>unlockedCount()>=20},
  {id:'trendy',name:'Trendsetter',desc:'Ride 10 viral trends',ck:g=>g.stats.trends>=10},
  {id:'happy1',name:'Happy Place',desc:'Reach happiness x2.5',ck:g=>happiness()>=2.5},
  {id:'prestige1',name:'Reborn',desc:'Prestige once',ck:g=>g.prestiges>=1},
  {id:'prestige2',name:'Enlightened',desc:'Prestige 5 times',ck:g=>g.prestiges>=5},
  {id:'offlinepro',name:'Welcome Back',desc:'Collect offline earnings',ck:g=>g.stats.offline>=1},
+ {id:'rich5',name:'Quadrillion Club',desc:'Earn $1Qa total',ck:g=>g.stats.earned>=1e15},
+ {id:'boxer1',name:'Box Opener',desc:'Open 25 blind boxes',ck:g=>(g.stats.boxes||0)>=25},
+ {id:'boxer2',name:'Box Addict',desc:'Open 250 blind boxes',ck:g=>(g.stats.boxes||0)>=250},
+ {id:'collectAll',name:'Gotta Squish Em All',desc:'Discover every squishy',ck:g=>discoveredCount()>=SQUISHIES.length},
+ {id:'mythicOwn',name:'Mythic Maker',desc:'Own a Mythic squishy',ck:g=>SQUISHIES.some(s=>s.r==='mythic'&&g.unlocked[s.id])},
+ {id:'builder1',name:'Empire Builder',desc:'Own 10 buildings total',ck:g=>buildTotal()>=10},
+ {id:'builder2',name:'Squishy Tycoon',desc:'Own 40 buildings total',ck:g=>buildTotal()>=40},
+ {id:'golden1',name:'Golden Touch',desc:'Catch a golden squishy',ck:g=>(g.stats.golden||0)>=1},
+ {id:'golden2',name:'Gold Rush',desc:'Catch 25 golden squishies',ck:g=>(g.stats.golden||0)>=25},
+ {id:'combo1',name:'Combo Master',desc:'Reach a x20 tap combo',ck:g=>(g.stats.maxCombo||0)>=20},
 ];
 
 /* ===================== PROCEDURAL SPRITES ===================== */
@@ -398,7 +473,9 @@ function drawSquishy(c,cx,cy,r,d,squish,t){
   const ex=d.ex||[];
   if(ex.includes('glow')){let g=c.createRadialGradient(0,0,r*0.4,0,0,r*1.6);let gc=hexToRgb(d.acc);g.addColorStop(0,'rgba('+gc[0]+','+gc[1]+','+gc[2]+',.55)');g.addColorStop(1,'rgba('+gc[0]+','+gc[1]+','+gc[2]+',0)');c.fillStyle=g;c.beginPath();c.arc(0,0,r*1.6,0,7);c.fill();
     if(t!==undefined){c.save();c.rotate(t*0.4);for(let i=0;i<3;i++){c.rotate(2.09);c.fillStyle='rgba(255,255,255,.8)';star(c,r*1.25,0,r*0.12,4);c.fill();}c.restore();}}
-  squish=squish||0;c.scale(1+squish*0.16,1-squish*0.16);
+  if(ex.includes('megaglow')){const tt=t||0;c.save();c.rotate(tt*0.5);for(let i=0;i<6;i++){c.rotate(1.047);c.fillStyle='hsla('+((tt*55+i*60)%360)+',90%,72%,.45)';c.beginPath();c.moveTo(0,0);c.lineTo(r*0.55,-r*2.0);c.lineTo(-r*0.55,-r*2.0);c.closePath();c.fill();}c.restore();let gg=c.createRadialGradient(0,0,r*0.5,0,0,r*2);gg.addColorStop(0,'rgba(255,180,240,.5)');gg.addColorStop(1,'rgba(255,180,240,0)');c.fillStyle=gg;c.beginPath();c.arc(0,0,r*2,0,7);c.fill();}
+  squish=squish||0;const _wob=Math.sin((t||0)*2.4)*0.022;
+  c.scale(clamp(1+squish*0.34+_wob,0.5,1.95),clamp(1-squish*0.30-_wob,0.42,1.7));
   // shadow
   c.fillStyle='rgba(120,90,130,.15)';c.beginPath();c.ellipse(0,r*0.95,r*0.8,r*0.18,0,0,7);c.fill();
   if(ex.includes('halo')){c.strokeStyle='#ffe07a';c.lineWidth=r*0.08;c.beginPath();c.ellipse(0,-r*1.15,r*0.5,r*0.16,0,0,7);c.stroke();}
@@ -512,10 +589,12 @@ function newState(){
     mach:{foam:1},
     emp:{hamster:{n:1,lvl:1}},
     empTraits:{},
+    build:{},
     unlocked:{bread:true},
     discovered:{bread:true},
     deco:{},
     expansion:0,
+    nextGolden:now()+rand(40000,80000), lastFreeBox:'',
     perks:{prodSpeed:0,empEff:0,trendChance:0,followerGain:0,rareChance:0},
     ach:{},
     trend:null, nextTrend:now()+rand(40000,80000),
@@ -523,7 +602,7 @@ function newState(){
     boost:null,
     daily:{last:'',streak:0},
     settings:{particles:true,sound:true},
-    stats:{clicks:0,earned:0,maxFol:0,trends:0,offline:0,playtime:0,start:now(),squishesMade:0},
+    stats:{clicks:0,earned:0,maxFol:0,trends:0,offline:0,playtime:0,start:now(),squishesMade:0,boxes:0,golden:0,maxCombo:0},
     lbSeed:randInt(1,99999),
     lastSave:now(), ver:1
   };
@@ -598,6 +677,10 @@ function empLvlCost(id){const e=EMP_BY_ID[id];return Math.ceil(e.lb*Math.pow(1.8
 function decoCount(id){return G.deco[id]||0;}
 function decoCost(id){const d=DECOS.find(x=>x.id===id);return Math.ceil(d.base*Math.pow(d.cm,decoCount(id)));}
 function perkCost(id){const p=PERKS.find(x=>x.id===id);return Math.ceil(p.base*Math.pow(1.7,G.perks[id]));}
+function buildingLevel(id){return G.build[id]||0;}
+function buildTotal(){let n=0;for(const k in G.build)n+=G.build[k];return n;}
+function buildingCost(id){const b=BUILD_BY_ID[id];return Math.ceil(b.base*Math.pow(b.cm,buildingLevel(id)));}
+function buildingStats(){const s={sell:0,follower:0,research:0,prodm:0,global:0};for(const b of BUILDINGS){const lv=buildingLevel(b.id);if(lv>0)s[b.stat]+=b.per*lv;}return s;}
 
 function aggBonus(){
   const eff=1+G.perks.empEff*0.05;
@@ -621,25 +704,25 @@ function trendMatch(s){ if(!G.trend)return false; const T=TRENDS.find(t=>t.id===
 function activeTrend(){return G.trend?TRENDS.find(t=>t.id===G.trend.id):null;}
 
 function computeRates(){
-  const ms=machineStats(), a=aggBonus();
-  const globalMult=1+a.global, happy=happiness(), expM=EXPANSIONS[G.expansion].mult;
+  const ms=machineStats(), a=aggBonus(), bs=buildingStats();
+  const globalMult=1+a.global+bs.global, happy=happiness(), expM=EXPANSIONS[G.expansion].mult;
   const achM=1+Object.keys(G.ach).length*0.01, perkProd=1+G.perks.prodSpeed*0.05;
   const T=activeTrend(); const trendProd=T?T.prod:1, trendFollow=T?T.follow:1;
   let boostM=(G.boost&&G.boost.end>now())?G.boost.mult:1;
-  const prod=ms.out*(1+a.prod+ms.prodm)*globalMult*happy*expM*perkProd*achM*trendProd*boostM;
+  const prod=ms.out*(1+a.prod+ms.prodm+bs.prodm)*globalMult*happy*expM*perkProd*achM*trendProd*boostM;
   let tw=0,tv=0;
   for(const id in G.unlocked){const s=SQ_BY_ID[id];if(!s)continue;let p=s.price;
     if(s.r!=='common')p*=1+G.perks.rareChance*0.08;
     if(trendMatch(s)&&T)p*=T.mult;
     tw+=s.pop; tv+=p*s.pop;}
   const revPer=tw>0?tv/tw:1;
-  const sellMult=(1+a.sell+ms.sell)*globalMult*achM;
+  const sellMult=(1+a.sell+ms.sell+bs.sell)*globalMult*achM;
   const salesMult=1+Math.pow(Math.max(0,G.followers),0.55)/40;
   const money=prod*revPer*sellMult*salesMult;
   let catCute=0,catPop=0;for(const id in G.unlocked){const s=SQ_BY_ID[id];catCute+=s.cute;catPop+=s.pop;}
-  const folMult=(1+a.follower+ms.follower)*globalMult*(1+G.perks.followerGain*0.06)*achM;
+  const folMult=(1+a.follower+ms.follower+bs.follower)*globalMult*(1+G.perks.followerGain*0.06)*achM;
   const fol=(catCute*0.18+catPop*0.10)*folMult*trendFollow*0.55*boostM;
-  const rp=(1.5+a.research)*globalMult;
+  const rp=(1.5+a.research+bs.research)*globalMult;
   return {prod,money,fol,rp,revPer,sellMult,salesMult,happy,globalMult,expM,boostM,a,ms};
 }
 function tapValue(){const r=_rates;return {cash:(r.prod*0.8+1)*r.revPer*r.sellMult*r.salesMult,fol:Math.max(0.2,r.fol*0.4),made:r.prod*0.8+1};}
@@ -717,6 +800,54 @@ function leaderboard(){
   return arr;
 }
 
+/* ===================== BLIND BOXES ===================== */
+function boxCost(id){return BOX_BY_ID[id].cost;}
+function rollRarity(odds){
+  const luck=G.perks.rareChance*0.01;
+  const o=Object.assign({},odds);
+  if(o.common){const shift=Math.min(o.common*0.5,o.common*luck);o.common-=shift;o.epic=(o.epic||0)+shift;}
+  let total=0;for(const k in o)total+=o[k];
+  let r=Math.random()*total,acc=0;
+  for(const k of ['common','rare','epic','legendary','mythic']){acc+=o[k]||0;if(r<acc)return k;}
+  return 'common';
+}
+function openBox(tier,count,free){
+  const B=BOX_BY_ID[tier]; const cost=free?0:boxCost(tier)*count;
+  if(!free&&G.money<cost){sfx('error');toast('Not enough money for that box!');return;}
+  G.money-=cost;
+  const results=[];
+  for(let i=0;i<count;i++){
+    const rar=rollRarity(B.odds);
+    const s=choice(SQUISHIES.filter(x=>x.r===rar));
+    const isNew=!G.discovered[s.id];
+    if(isNew){G.discovered[s.id]=true;G.unlocked[s.id]=true;}
+    let reward=0;
+    if(!isNew){reward=Math.ceil(s.price*rand(0.6,1.5)+50);G.money+=reward;G.runEarned+=reward;G.stats.earned+=reward;}
+    results.push({s,isNew,reward});
+  }
+  G.stats.boxes=(G.stats.boxes||0)+count;
+  showBoxReveal(B,results,count);
+}
+function showBoxReveal(B,results,count){
+  openModal('<h2>'+B.ic+' Opening Box…</h2><div class="shakebox">'+B.ic+'</div><p class="subtle">squish squish squish…</p>');
+  sfx('pop');
+  setTimeout(()=>{
+    if(!modalOpen())return;
+    let best=results[0];for(const r of results)if(RARITY_RANK[r.s.r]>RARITY_RANK[best.s.r])best=r;
+    confetti(RARITY[best.s.r].c,'#ffffff'); if(RARITY_RANK[best.s.r]>=3)confetti('#ffd95a','#ff9ec9');
+    let g='<h2>'+(count>1?count+'x ':'')+B.name+'</h2><div class="pull-grid">';
+    results.forEach((r,i)=>{g+='<div class="pull-cell rar-'+r.s.r+'" style="animation-delay:'+(i*0.05).toFixed(2)+'s"><img src="'+squishyThumb(r.s.id)+'" width="46" height="46"><div class="pn">'+r.s.name+'</div>'+(r.isNew?'<div class="newb">NEW!</div>':'<div class="dupb">+'+money(r.reward)+'</div>')+'</div>';});
+    g+='</div>';
+    const news=results.filter(r=>r.isNew).length, cash=results.reduce((a,b)=>a+b.reward,0);
+    g+='<p class="subtle">'+(news?('✨ '+news+' NEW squishy'+(news>1?'ies':'')+'! '):'')+(cash>0?('💰 +'+money(cash)+' from duplicates'):(news?'':'No duplicates this time'))+'</p>';
+    g+='<button class="btn pink wide" data-act="closeModal">'+(news?'Yay! ✦':'Sweet!')+'</button>';
+    openModal(g);
+    sfx(RARITY_RANK[best.s.r]>=3?'ach':'coin');
+  },950);
+}
+function canFreeBox(){return G.lastFreeBox!==todayStr();}
+function claimFreeBox(){if(!canFreeBox())return;G.lastFreeBox=todayStr();openBox('basic',1,true);}
+
 /* ===================== TICK ===================== */
 let _lastAch=0;
 function tick(dt){
@@ -732,12 +863,13 @@ function tick(dt){
   if(G.boost&&G.boost.end<=now())G.boost=null;
   if(now()>G.nextCustomer&&!G.customer&&!modalOpen())spawnEvent();
   if(G.customer&&now()>G.customer.expire)hideCustomer();
+  if(scene.w>0&&now()>G.nextGolden&&!scene.golden&&!document.hidden){spawnGolden();G.nextGolden=now()+rand(55000,120000)/(1+G.perks.trendChance*0.05);}
   if(now()-_lastAch>500){_lastAch=now();checkAchievements();}
 }
 
 /* ===================== SCENE / RENDER ===================== */
 let cv,ctx;
-const scene={w:0,h:0,tw:80,th:40,t:0,agents:[],items:[],parts:[],hero:{sq:0},lastEmp:-1};
+const scene={w:0,h:0,tw:80,th:40,t:0,agents:[],items:[],parts:[],hero:{sq:0,sqv:0},golden:null,lastEmp:-1};
 const MSLOT=[[1,0.7],[3,0.45],[5,0.7],[5,3.15],[3,3.45],[1,3.15]];
 function setupScene(){
   cv=$('#scene'); ctx=cv.getContext('2d'); resizeScene();
@@ -820,7 +952,7 @@ function drawScene(dt){
   for(let i=0;i<MACHINES.length;i++){const lv=machineLevel(MACHINES[i].id);if(lv<=0)continue;const s=MSLOT[i];const p=iso(s[0],s[1]);
     const sz=scene.tw*0.62; list.push({k:s[0]+s[1]-0.3,fn:()=>{ctx.save();ctx.translate(p.x,p.y-sz*0.45);drawMachineSprite(ctx,MACHINES[i].id,sz,sz*0.85,scene.t+i);ctx.restore();}});}
   // conveyor items
-  for(const it of scene.items){if(!it._p)continue;const bob=Math.sin(it.bob*6)*3;list.push({k:( (it._p.y)/scene.th )+2.2,fn:()=>{drawSquishy(ctx,it._p.x,it._p.y-scene.tw*0.12+bob,scene.tw*0.12,SQ_BY_ID[it.sid].d,Math.sin(it.bob*6)*0.3,scene.t);}});}
+  for(const it of scene.items){if(!it._p)continue;const bob=Math.sin(it.bob*7)*4;list.push({k:( (it._p.y)/scene.th )+2.2,fn:()=>{drawSquishy(ctx,it._p.x,it._p.y-scene.tw*0.12+bob,scene.tw*0.12,SQ_BY_ID[it.sid].d,Math.sin(it.bob*7)*0.5,scene.t);}});}
   // agents
   for(const a of scene.agents){const p=iso(a.gx,a.gy);const sz=scene.tw*0.24*(0.85+a.gy*0.05);list.push({k:a.gx+a.gy,fn:()=>{drawAnimal(ctx,p.x,p.y,sz,a.kind,a.ph,a.facing);}});}
   // hero squishy on pedestal
@@ -833,7 +965,9 @@ function drawScene(dt){
     drawSquishy(ctx,hp.x,hp.y-scene.tw*0.18,scene.tw*0.42,best.d,scene.hero.sq+idle,scene.t);
   }});
   list.sort((a,b)=>a.k-b.k); for(const o of list)o.fn();
-  scene.hero.sq*=Math.pow(0.0001,dt); // fast decay
+  // hero squish spring (bouncy jelly settle)
+  const H=scene.hero; H.sqv+=(-150*H.sq-11*H.sqv)*dt; H.sq+=H.sqv*dt; if(Math.abs(H.sq)<0.0005&&Math.abs(H.sqv)<0.0005){H.sq=0;H.sqv=0;}
+  drawGolden(dt);
   drawParts(dt);
 }
 function heroSquishy(){let best=SQ_BY_ID['bread'];for(const id in G.unlocked){if(SQ_BY_ID[id].idx>best.idx)best=SQ_BY_ID[id];}return best;}
@@ -857,17 +991,39 @@ function heartsBurst(x,y){if(!G.settings.particles)return;const cols=['#ff7fb8',
 function confetti(c1,c2){if(!G.settings.particles)return;for(let i=0;i<34;i++){scene.parts.push({x:scene.w*0.5+rand(-scene.w*0.3,scene.w*0.3),y:-10,vx:rand(-40,40),vy:rand(40,140),life:rand(1.2,2),kind:'confetti',color:Math.random()<0.5?c1:c2,size:rand(3,6),rot:rand(0,7),g:1});}}
 
 /* tap */
+function spawnGolden(){const fromLeft=Math.random()<0.5;scene.golden={x:fromLeft?-40:scene.w+40,y:rand(scene.h*0.18,scene.h*0.55),vx:(fromLeft?1:-1)*rand(46,76),vy:rand(-8,8),phase:0};}
+function drawGolden(dt){const g=scene.golden;if(!g)return;g.x+=g.vx*dt;g.y+=g.vy*dt;g.phase+=dt;
+  if(g.x<-70||g.x>scene.w+70){scene.golden=null;return;}
+  if(G.settings.particles&&Math.random()<0.5)scene.parts.push({x:g.x+rand(-10,10),y:g.y+rand(-8,8),vx:rand(-20,20),vy:rand(-6,22),life:rand(0.4,0.8),kind:'spark',color:'#ffe07a',size:rand(3,6)});
+  const r=scene.tw*0.34*(1+Math.sin(g.phase*4)*0.07);
+  drawSquishy(ctx,g.x,g.y,r,{base:'#ffd24a',acc:'#fff6c0',shape:'round',face:'cool',ex:['glow','crown','sparkle']},Math.sin(g.phase*5)*0.2,g.phase);
+}
+function catchGolden(x,y){scene.golden=null;G.stats.golden=(G.stats.golden||0)+1;
+  if(Math.random()<0.6){G.boost={mult:7,end:now()+15000};toast('🌟 GOLDEN SQUISHY! Frenzy x7 for 15s!');floatNum(x,y,'FRENZY x7!','#ff8a2e');}
+  else{const c=Math.max(1000,_rates.money*rand(180,420));G.money+=c;G.runEarned+=c;G.stats.earned+=c;toast('🌟 Golden Squishy! +'+money(c));floatNum(x,y,'+'+money(c),'#ff8a2e');}
+  G.followers+=Math.max(20,_rates.fol*rand(30,80));
+  confetti('#ffd95a','#fff6c0');sfx('ach');for(let i=0;i<3;i++)heartsBurst(x+rand(-22,22),y+rand(-22,22));
+  refreshTopbar();
+}
+let _comboN=0,_comboT=0;
 function onTap(e){
   e.preventDefault();
   const rect=cv.getBoundingClientRect();
   const x=(e.clientX||(e.touches&&e.touches[0].clientX))-rect.left;
   const y=(e.clientY||(e.touches&&e.touches[0].clientY))-rect.top;
-  const tv=tapValue();
-  G.money+=tv.cash; G.runEarned+=tv.cash; G.stats.earned+=tv.cash;
+  if(scene.golden&&Math.hypot(x-scene.golden.x,y-scene.golden.y)<scene.tw*0.62){catchGolden(x,y);return;}
+  const tn=now(); _comboN=(tn-_comboT<700)?_comboN+1:1; _comboT=tn;
+  if(_comboN>(G.stats.maxCombo||0))G.stats.maxCombo=_comboN;
+  const comboMult=1+Math.min(_comboN-1,40)*0.05;
+  const tv=tapValue(); const cash=tv.cash*comboMult;
+  G.money+=cash; G.runEarned+=cash; G.stats.earned+=cash;
   G.followers+=tv.fol; G.stats.squishesMade+=tv.made; G.stats.clicks++;
-  scene.hero.sq=1; heartsBurst(x,y); floatNum(x,y,'+'+money(tv.cash),'#ff5fa0'); sfx('tap');
+  scene.hero.sqv=14; heartsBurst(x,y); sfx('tap');
+  if(_comboN>=3)comboPop(x,y-32,'COMBO x'+_comboN);
+  floatNum(x,y,'+'+money(cash),'#ff5fa0');
   refreshTopbar();
 }
+function comboPop(x,y,txt){const el=document.createElement('div');el.className='combo-pop';el.textContent=txt;el.style.left=x+'px';el.style.top=y+'px';$('#scene-wrap').appendChild(el);setTimeout(()=>el.remove(),700);}
 function floatNum(x,y,txt,col){
   const el=document.createElement('div');el.className='float-num';el.textContent=txt;el.style.left=x+'px';el.style.top=y+'px';el.style.color=col;
   $('#scene-wrap').appendChild(el); setTimeout(()=>el.remove(),1000);
@@ -916,7 +1072,7 @@ function refreshTopbar(){
 }
 
 /* ===================== PANELS ===================== */
-let curTab='factory';
+let curTab='factory', factorySub='machines', collSub='boxes';
 function setTab(name){curTab=name;document.querySelectorAll('.nav-b').forEach(b=>b.classList.toggle('on',b.dataset.tab===name));refreshPanel(true);}
 function refreshPanel(force){const p=$('#panel');const st=p.scrollTop;p.innerHTML=PANELS[curTab]();if(force)p.scrollTop=0;else p.scrollTop=st;}
 function aff(n){return G.money>=n;}
@@ -926,22 +1082,39 @@ function machineThumb(id){if(_mthumb[id])return _mthumb[id];const cv=document.cr
 
 function buildFactory(){
   const r=_rates;
-  let h='<div class="panel-title">🏭 Factory</div><div class="panel-sub">Build & upgrade machines to produce more squishies.</div>';
-  h+='<div class="card"><div class="stat-line"><span>Production</span><span>'+fmt(r.prod)+' squishies/s</span></div>'
+  let h='<div class="panel-title">🏭 Factory & Empire</div><div class="panel-sub">Build machines, grow buildings & expand your squishy empire.</div>';
+  h+='<div class="card"><div class="stat-line"><span>Production</span><span>'+fmt(r.prod)+' /s</span></div>'
     +'<div class="stat-line"><span>Income</span><span>'+money(r.money)+'/s</span></div>'
     +'<div class="stat-line"><span>Avg sell value</span><span>'+money(r.revPer)+'</span></div>'
     +'<div class="stat-line"><span>Follower bonus</span><span>x'+(r.salesMult).toFixed(2)+'</span></div>'
-    +'<div class="stat-line"><span>Happiness</span><span>x'+r.happy.toFixed(2)+'</span></div></div>';
-  // expansion
-  const ex=EXPANSIONS[G.expansion];const nx=EXPANSIONS[G.expansion+1];
-  h+='<div class="card"><div class="row"><div class="info"><div class="nm">🏢 '+ex.name+'</div><div class="ds">Space multiplier x'+ex.mult+'</div></div>';
-  if(nx)h+=bbtn('buyExpansion','', 'gold','Expand →<br><span style="font-size:10px">'+nx.name+'</span>',money(nx.cost),aff(nx.cost));
-  else h+='<span class="lvlpill">MAX</span>';
-  h+='</div></div>';
-  // machines
-  for(const m of MACHINES){const lv=machineLevel(m.id);const cost=machineCost(m.id);
-    h+='<div class="card"><div class="row"><div class="thumb">'+'<img src="'+machineThumb(m.id)+'" width="44" height="44">'+'</div><div class="info"><div class="nm">'+m.name+(lv>0?' <span class="lvlpill">Lv '+lv+'</span>':'')+'</div><div class="ds">'+m.desc+(lv>0?' · +'+fmt(m.prod*lv)+'/s':'')+'</div></div>'
-     +bbtn('buyMachine',m.id,lv>0?'up':'buy',lv>0?'Upgrade':'Build',money(cost),aff(cost))+'</div></div>';
+    +'<div class="stat-line"><span>Happiness</span><span>x'+r.happy.toFixed(2)+'</span></div>'
+    +(r.boostM>1?'<div class="stat-line"><span>⚡ Boost</span><span style="color:#ff8a2e">x'+r.boostM+'</span></div>':'')+'</div>';
+  h+='<div class="seg">'
+    +'<button class="'+(factorySub==='machines'?'on':'')+'" data-act="fsub" data-id="machines">⚙️ Machines</button>'
+    +'<button class="'+(factorySub==='buildings'?'on':'')+'" data-act="fsub" data-id="buildings">🏢 Buildings</button>'
+    +'<button class="'+(factorySub==='expand'?'on':'')+'" data-act="fsub" data-id="expand">🌍 Expand</button></div>';
+  if(factorySub==='machines'){
+    for(const m of MACHINES){const lv=machineLevel(m.id);const cost=machineCost(m.id);
+      h+='<div class="card"><div class="row"><div class="thumb"><img src="'+machineThumb(m.id)+'" width="44" height="44"></div><div class="info"><div class="nm">'+m.name+(lv>0?' <span class="lvlpill">Lv '+lv+'</span>':'')+'</div><div class="ds">'+m.desc+(lv>0?' · +'+fmt(m.prod*lv)+'/s':'')+'</div></div>'
+       +bbtn('buyMachine',m.id,lv>0?'up':'buy',lv>0?'Upgrade':'Build',money(cost),aff(cost))+'</div></div>';
+    }
+  } else if(factorySub==='buildings'){
+    h+='<div class="subtle">Empire buildings give permanent company-wide bonuses — '+buildTotal()+' built.</div>';
+    for(const b of BUILDINGS){const lv=buildingLevel(b.id);const cost=buildingCost(b.id);
+      h+='<div class="card"><div class="row"><div class="thumb" style="font-size:26px">'+b.ic+'</div><div class="info"><div class="nm">'+b.name+(lv>0?' <span class="lvlpill" style="background:var(--mint-d)">Lv '+lv+'</span>':'')+'</div><div class="ds">'+b.desc+'</div></div>'
+       +bbtn('buyBuilding',b.id,lv>0?'up':'buy',lv>0?'Upgrade':'Build',money(cost),aff(cost))+'</div></div>';
+    }
+  } else {
+    const ex=EXPANSIONS[G.expansion];
+    h+='<div class="card bigreward"><div class="row"><div class="thumb" style="font-size:26px">🏢</div><div class="info"><div class="nm">'+ex.name+'</div><div class="ds">Current space multiplier x'+fmt(ex.mult)+'</div></div></div></div>';
+    EXPANSIONS.forEach((e,i)=>{ if(i===0)return;
+      const owned=i<=G.expansion, isNext=i===G.expansion+1;
+      h+='<div class="card"'+(owned?' style="opacity:.6"':'')+'><div class="row"><div class="info"><div class="nm">'+(owned?'✓ ':'')+e.name+'</div><div class="ds">Space multiplier x'+fmt(e.mult)+'</div></div>';
+      if(owned)h+='<span class="lvlpill" style="background:var(--mint-d)">Owned</span>';
+      else if(isNext)h+=bbtn('buyExpansion','','gold','Expand!',money(e.cost),aff(e.cost));
+      else h+='<span class="lvlpill" style="background:#cbb8d6">🔒</span>';
+      h+='</div></div>';
+    });
   }
   return h;
 }
@@ -973,17 +1146,29 @@ function buildResearch(){
   }
   return h;
 }
+function oddsText(o){const nm={common:'C',rare:'R',epic:'E',legendary:'L',mythic:'M'};let p='';for(const k of ['common','rare','epic','legendary','mythic'])if(o[k])p+='<span style="color:'+RARITY[k].c+'"><b>'+nm[k]+'</b> '+o[k]+'%</span> ';return p;}
 function buildCollection(){
-  let h='<div class="panel-title">📖 Collection Book</div><div class="panel-sub">Discovered '+discoveredCount()+' / '+SQUISHIES.length+' squishies. Tap to inspect!</div>';
-  h+='<div class="bar" style="margin-bottom:12px"><i style="width:'+(discoveredCount()/SQUISHIES.length*100)+'%"></i></div>';
-  h+='<div class="grid">';
-  for(const s of SQUISHIES){const disc=G.discovered[s.id];const live=G.unlocked[s.id];const tr=disc&&trendMatch(s);
-    h+='<div class="cell '+(disc?'':'locked lock-q')+(tr?' trending':'')+'" '+(disc?'data-act="sqInfo" data-id="'+s.id+'"':'')+'><span class="rr" style="background:'+RARITY[s.r].c+'"></span>';
-    if(disc)h+='<img src="'+squishyThumb(s.id)+'" width="52" height="52"><div class="cn">'+s.name+'</div>';
-    else h+='<div style="height:52px"></div><div class="cn">???</div>';
+  let h='<div class="panel-title">📖 Collection</div><div class="panel-sub">Discovered '+discoveredCount()+' / '+SQUISHIES.length+' squishies.</div>';
+  h+='<div class="seg">'
+    +'<button class="'+(collSub==='boxes'?'on':'')+'" data-act="csub" data-id="boxes">🎁 Blind Boxes</button>'
+    +'<button class="'+(collSub==='book'?'on':'')+'" data-act="csub" data-id="book">📖 Squishy Book</button></div>';
+  if(collSub==='boxes'){
+    h+='<div class="subtle">Open blind boxes for a random squishy! New ones auto-unlock for production. Duplicates pay cash 💰</div>';
+    if(canFreeBox())h+='<div class="box-card bigreward"><div class="box-ic" style="background:#fff0b0">🎀</div><div class="info"><div class="nm">Free Daily Box!</div><div class="ds">A free box every day ✦</div></div>'+bbtn('freeBox','','gold','Open!','FREE',true)+'</div>';
+    for(const b of BOXES){const can=G.money>=b.cost, can10=G.money>=b.cost*10;
+      h+='<div class="box-card"><div class="box-ic" style="background:'+b.bg+'">'+b.ic+'</div><div class="info"><div class="nm">'+b.name+'</div><div class="box-odds">'+oddsText(b.odds)+'</div>'
+       +'<div style="display:flex;gap:6px;margin-top:6px">'+bbtn('box1',b.id,'pink','Open',money(b.cost),can)+bbtn('box10',b.id,'purple','x10',money(b.cost*10),can10)+'</div></div></div>';
+    }
+  } else {
+    h+='<div class="bar" style="margin:6px 0 12px"><i style="width:'+(discoveredCount()/SQUISHIES.length*100)+'%"></i></div><div class="grid">';
+    for(const s of SQUISHIES){const disc=G.discovered[s.id];const tr=disc&&trendMatch(s);
+      h+='<div class="cell '+(disc?'':'locked lock-q')+(tr?' trending':'')+'" '+(disc?'data-act="sqInfo" data-id="'+s.id+'"':'')+'><span class="rr" style="background:'+RARITY[s.r].c+'"></span>';
+      if(disc)h+='<img src="'+squishyThumb(s.id)+'" width="52" height="52"><div class="cn">'+s.name+'</div>';
+      else h+='<div style="height:52px"></div><div class="cn">???</div>';
+      h+='</div>';
+    }
     h+='</div>';
   }
-  h+='</div>';
   return h;
 }
 const _dthumb={};
@@ -1070,7 +1255,7 @@ function openAch(){
 function openStats(){
   const r=_rates;
   let g='<h2>📊 Statistics</h2><div class="card" style="text-align:left">';
-  const rows=[['Total earned',money(G.stats.earned)],['Money/s',money(r.money)],['Followers',fmt(G.followers)],['Peak followers',fmt(G.stats.maxFol)],['Squishies made',fmt(G.stats.squishesMade)],['Production/s',fmt(r.prod)],['Manual squishes',fmt(G.stats.clicks)],['Crew hired',empTotal()],['Squishies unlocked',unlockedCount()+' / '+SQUISHIES.length],['Discovered',discoveredCount()+' / '+SQUISHIES.length],['Trends ridden',G.stats.trends],['Prestiges',G.prestiges],['Squish Knowledge',fmt(G.knowledge)],['Achievements',Object.keys(G.ach).length+' / '+ACHS.length],['Net worth',money(networth())],['Play time',fmtTime(G.stats.playtime)]];
+  const rows=[['Total earned',money(G.stats.earned)],['Money/s',money(r.money)],['Followers',fmt(G.followers)],['Peak followers',fmt(G.stats.maxFol)],['Squishies made',fmt(G.stats.squishesMade)],['Production/s',fmt(r.prod)],['Manual squishes',fmt(G.stats.clicks)],['Best tap combo','x'+(G.stats.maxCombo||0)],['Blind boxes opened',fmt(G.stats.boxes||0)],['Golden squishies',fmt(G.stats.golden||0)],['Buildings owned',buildTotal()],['Crew hired',empTotal()],['Squishies unlocked',unlockedCount()+' / '+SQUISHIES.length],['Discovered',discoveredCount()+' / '+SQUISHIES.length],['Trends ridden',G.stats.trends],['Prestiges',G.prestiges],['Squish Knowledge',fmt(G.knowledge)],['Achievements',Object.keys(G.ach).length+' / '+ACHS.length],['Net worth',money(networth())],['Play time',fmtTime(G.stats.playtime)]];
   for(const r2 of rows)g+='<div class="stat-line"><span>'+r2[0]+'</span><span>'+r2[1]+'</span></div>';
   g+='</div><button class="btn up wide" data-act="closeModal">Close</button>';openModal(g);
 }
@@ -1100,6 +1285,12 @@ function handleAct(act,id,btn){
   switch(act){
     case 'buyMachine':{const c=machineCost(id);if(spend(c)){G.mach[id]=(G.mach[id]||0)+1;sfx('buy');bump(btn);heartsBurstScene();}break;}
     case 'buyExpansion':{const nx=EXPANSIONS[G.expansion+1];if(nx&&spend(nx.cost)){G.expansion++;sfx('prestige');confetti('#ffd95a','#9be08a');toast('🏢 Expanded to '+EXPANSIONS[G.expansion].name+'!');}break;}
+    case 'buyBuilding':{const c=buildingCost(id);if(spend(c)){G.build[id]=(G.build[id]||0)+1;sfx('buy');bump(btn);confetti('#9be08a','#6fe0c8');}break;}
+    case 'fsub':factorySub=id;sfx('pop');refreshTopbar();refreshPanel(true);return;
+    case 'csub':collSub=id;sfx('pop');refreshTopbar();refreshPanel(true);return;
+    case 'box1':openBox(id,1);return;
+    case 'box10':openBox(id,10);return;
+    case 'freeBox':claimFreeBox();return;
     case 'hireEmp':{const c=empHireCost(id);if(spend(c)){if(!G.emp[id])G.emp[id]={n:0,lvl:1};G.emp[id].n++;sfx('buy');bump(btn);rebuildAgents();}break;}
     case 'levelEmp':{const c=empLvlCost(id);if(empCount(id)>0&&spend(c)){G.emp[id].lvl++;sfx('up');bump(btn);if(G.emp[id].lvl%5===0){G.empTraits[id]=G.empTraits[id]||[];const t=(G.emp[id].lvl/5-1)%TRAITS.length;G.empTraits[id].push(t);toast('🌟 '+EMP_BY_ID[id].name+' gained trait: '+TRAITS[t]+'!');confetti('#6fe0c8','#9be08a');}}break;}
     case 'research':{const s=SQ_BY_ID[id];if(researchAvailable(s)===true&&G.rp>=s.rp&&G.money>=s.cost){G.rp-=s.rp;G.money-=s.cost;G.unlocked[id]=true;G.discovered[id]=true;sfx('ach');unlockAnim(s);}else{sfx('error');toast('Need more research/cash!');}break;}
